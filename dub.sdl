@@ -1,0 +1,7 @@
+name "discord"
+description "2D geometry and collision detection."
+copyright "Copyright © 2016, rcorre"
+authors "rcorre"
+license "MIT"
+
+dependency "gfm:math" version="~>5.0.0"
