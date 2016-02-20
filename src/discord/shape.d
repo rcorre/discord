@@ -32,22 +32,22 @@ auto visitAny(alias fn, S)(ref S shape) if (isShape!S) {
     assert(0, "Variant holds no value");
 }
 
-template isShape(V : VariantN!T, T...) {
-    static if (__traits(compiles, TemplateArgsOf!(T[1])[0])) {
-        alias NumericType = TemplateArgsOf!(T[1])[0]; // e.g. float, int, etc
-        enum isShape = is(V == Shape!NumericType);
-    }
-    else {
-        enum isShape = false;
-    }
-}
-
+/// Return `true` iff `T` is an instantiation of the `Shape` template.
 template isShape(T) {
-    enum isShape = false;
+    // if T presents its AllowedTypes, check if each is shape-like
+    // if not, it isn't a variant and definitely isn't a shape
+    static if (is(T.AllowedTypes Types)) {
+        import std.meta : allSatisfy;
+        enum isSomeShape(V) = is(typeof(shape(V.init)));
+        enum isShape = allSatisfy!(isSomeShape, Types);
+    }
+    else
+        enum isShape = false;
 }
 
+///
 unittest {
-    static assert(isShape!(Shape!float));
+    static assert( isShape!(Shape!float));
     static assert(!isShape!(int));
     static assert(!isShape!(Algebraic!(int, float)));
 }
