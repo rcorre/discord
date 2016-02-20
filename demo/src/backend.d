@@ -42,3 +42,7 @@ void draw(T)(Sphere!(T,2) c, ALLEGRO_COLOR color, float thickness = 1) {
 void draw(T)(Triangle!(T,2) t, ALLEGRO_COLOR color, float thickness = 1) {
 	al_draw_triangle(t.a.x, t.a.y, t.b.x, t.b.y, t.c.x, t.c.y, color, thickness);
 }
+
+void draw(T)(T s, ALLEGRO_COLOR color, float thickness = 1) if (isShape!T) {
+    s.visitAny!(x => draw(x, al_map_rgb(0, 255, 0), thickness));
+}

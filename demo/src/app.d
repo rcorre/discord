@@ -20,6 +20,7 @@ int main() {
     ALLEGRO_TIMER       *timer       = null;
 
     Shape!float[] shapes;
+    Shape!float placeMe;
 
     if(!al_init()) {
         stderr.writeln("failed to initialize allegro!\n");
@@ -73,7 +74,14 @@ int main() {
         else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
             immutable x = ev.mouse.x;
             immutable y = ev.mouse.y;
-            shapes ~= shape(box2f(x, y, x + 20, y + 20));
+            placeMe = shape(box2f(x, y, x + 20, y + 20));
+        }
+        else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP) {
+            shapes ~= placeMe;
+            placeMe = Shape!float();
+        }
+        else if(ev.type == ALLEGRO_EVENT_MOUSE_AXES && placeMe.hasValue) {
+            draw(placeMe, al_map_rgb(0,128,0));
         }
 
         if(redraw && al_is_event_queue_empty(event_queue)) {
@@ -82,8 +90,11 @@ int main() {
 
             drawGrid();
 
-            foreach(shape ; shapes)
-                shape.visitAny!(x => draw(x, al_map_rgb(0, 255, 0)));
+            foreach(shape ; shapes) draw(shape, al_map_rgb(0, 255, 0));
+
+            if (placeMe.hasValue) {
+                draw(placeMe, al_map_rgb(0,128,0));
+            }
 
             al_flip_display();
         }
