@@ -72,16 +72,19 @@ int main() {
             break;
         }
         else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-            immutable x = ev.mouse.x;
-            immutable y = ev.mouse.y;
-            placeMe = shape(box2f(x, y, x + 20, y + 20));
+            // start placing a shape that (so far) has no size
+            immutable m = vec2f(ev.mouse.x, ev.mouse.y);
+            placeMe = shape(box2f(m, m));
         }
         else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP) {
+            // confirm placement of the current shape
             shapes ~= placeMe;
             placeMe = Shape!float();
         }
         else if(ev.type == ALLEGRO_EVENT_MOUSE_AXES && placeMe.hasValue) {
-            draw(placeMe, al_map_rgb(0,128,0));
+            // drag out the size of the shape
+            immutable m = vec2f(ev.mouse.x, ev.mouse.y);
+            placeMe = placeMe.tryVisit!((box2f b) => box2f(b.min, m));
         }
 
         if(redraw && al_is_event_queue_empty(event_queue)) {
@@ -92,9 +95,8 @@ int main() {
 
             foreach(shape ; shapes) draw(shape, al_map_rgb(0, 255, 0));
 
-            if (placeMe.hasValue) {
-                draw(placeMe, al_map_rgb(0,128,0));
-            }
+            if (placeMe.hasValue) draw(placeMe, al_map_rgb(0,128,0));
+
 
             al_flip_display();
         }
