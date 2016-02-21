@@ -20,7 +20,8 @@ int main() {
     ALLEGRO_TIMER       *timer       = null;
 
     Shape!float[] shapes;
-    Shape!float placeMe;
+    Shape!float selectedShape;
+    Shape!float function(vec2f mousePos) startShape = &startRect;
 
     if(!al_init()) {
         stderr.writeln("failed to initialize allegro!\n");
@@ -61,30 +62,48 @@ int main() {
     al_start_timer(timer);
 
     bool redraw = true;
-    while(1) {
+    bool done = false;
+    while(!done) {
         ALLEGRO_EVENT ev;
         al_wait_for_event(event_queue, &ev);
 
-        if(ev.type == ALLEGRO_EVENT_TIMER) {
-            redraw = true;
-        }
-        else if(ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-            break;
-        }
-        else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-            // start placing a shape that (so far) has no size
-            immutable m = vec2f(ev.mouse.x, ev.mouse.y);
-            placeMe = shape(box2f(m, m));
-        }
-        else if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP) {
-            // confirm placement of the current shape
-            shapes ~= placeMe;
-            placeMe = Shape!float();
-        }
-        else if(ev.type == ALLEGRO_EVENT_MOUSE_AXES && placeMe.hasValue) {
-            // drag out the size of the shape
-            immutable m = vec2f(ev.mouse.x, ev.mouse.y);
-            placeMe = placeMe.tryVisit!((box2f b) => box2f(b.min, m));
+        switch (ev.type) {
+            case ALLEGRO_EVENT_TIMER:
+                redraw = true;
+                break;
+            case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                done = true;
+                break;
+            case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
+                // start placing a shape that (so far) has no size
+                selectedShape = startShape(vec2f(ev.mouse.x, ev.mouse.y));
+                break;
+            case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
+                // confirm placement of the current shape
+                shapes ~= selectedShape;
+                selectedShape = Shape!float();
+                break;
+            case ALLEGRO_EVENT_MOUSE_AXES:
+                if (selectedShape.hasValue) {
+                    // drag out the size of the shape
+                    immutable m = vec2f(ev.mouse.x, ev.mouse.y);
+                    selectedShape = selectedShape.tryVisit!(
+                        (box2f b) => shape(box2f(b.min, m)),
+                        (sphere2f s) => shape(sphere2f(s.center, s.center.distanceTo(m))));
+                }
+                break;
+            case ALLEGRO_EVENT_KEY_DOWN:
+                switch (ev.keyboard.keycode) {
+                    case ALLEGRO_KEY_R:
+                        startShape = &startRect;
+                        break;
+                    case ALLEGRO_KEY_C:
+                        startShape = &startCircle;
+                        break;
+                    default: // ignore other keys
+                }
+                break;
+            default: // ignore other events
         }
 
         if(redraw && al_is_event_queue_empty(event_queue)) {
@@ -95,8 +114,7 @@ int main() {
 
             foreach(shape ; shapes) draw(shape, al_map_rgb(0, 255, 0));
 
-            if (placeMe.hasValue) draw(placeMe, al_map_rgb(0,128,0));
-
+            if (selectedShape.hasValue) draw(selectedShape, al_map_rgb(0,128,0));
 
             al_flip_display();
         }
@@ -118,3 +136,6 @@ void drawGrid() {
     foreach(y ; 0.iota(screenH, gridSpace))
         draw(seg2f(vec2f(-10, y), vec2f(screenW + 10, y)), color);
 }
+
+auto startRect(vec2f pos) { return shape(box2f(pos, pos)); }
+auto startCircle(vec2f pos) { return shape(sphere2f(pos, 0)); }
