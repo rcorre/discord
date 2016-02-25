@@ -33,6 +33,20 @@ unittest {
     assert(test(seg2f(vec2f( 2, 2), vec2f(-2,-2)), vec2f(-1, 1)));
 }
 
+/**
+ * Returns the project of vector a onto vector b.
+ *
+ */
+auto project(T)(Vector!(T, 2) a, Vector!(T, 2) b) {
+    return b * (a.dot(b) / b.squaredLength);
+}
+
+unittest {
+    assert(vec2f(1, 0).project(vec2f(1, 0)) == vec2f(1, 0));
+    assert(vec2f(0, 1).project(vec2f(1, 0)) == vec2f(0, 0));
+    assert(vec2f(5, 2).project(vec2f(1, 0)) == vec2f(5, 0));
+}
+
 /// Return the segment composing an edge of a box
 auto top(T)(Box!(T, 2) b) { return seg2f(b.topLeft, b.topRight); }
 /// ditto
