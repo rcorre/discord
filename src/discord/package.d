@@ -1,5 +1,6 @@
 module discord;
 
+public import discord.sat;
 public import discord.shape;
 public import discord.geometry;
 public import discord.intersect;
