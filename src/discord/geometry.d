@@ -34,8 +34,7 @@ unittest {
 }
 
 /**
- * Returns the project of vector a onto vector b.
- *
+ * Returns the projection of vector a onto vector b.
  */
 auto project(T)(Vector!(T, 2) a, Vector!(T, 2) b) {
     return b * (a.dot(b) / b.squaredLength);
@@ -69,9 +68,9 @@ unittest {
 /// Return the given vertex (corner) of a box
 auto topLeft(T)(Box!(T, 2) box) { return box.min; }
 /// Return the given vertex (corner) of a box
-auto topRight(T)(Box!(T, 2) box) { return vec2f(box.max.x, box.min.y); }
+auto topRight(T)(Box!(T, 2) box) { return vec2!T(box.max.x, box.min.y); }
 /// Return the given vertex (corner) of a box
-auto bottomLeft(T)(Box!(T, 2) box) { return vec2f(box.min.x, box.max.y); }
+auto bottomLeft(T)(Box!(T, 2) box) { return vec2!T(box.min.x, box.max.y); }
 /// Return the given vertex (corner) of a box
 auto bottomRight(T)(Box!(T, 2) box) { return box.max; }
 
@@ -85,8 +84,8 @@ unittest {
 }
 
 /// Return a range of the vertices of a shape.
-auto vertices(T)(Box!(T, 2) b) {
-    return only(b.topLeft, b.topRight, b.bottomRight, b.bottomLeft);
+auto vertices(T)(Segment!(T, 2) s) {
+    return only(s.a, s.b);
 }
 
 /// ditto
@@ -94,9 +93,17 @@ auto vertices(T)(Triangle!(T, 2) t) {
     return only(t.a, t.b, t.c);
 }
 
+/// ditto
+auto vertices(T)(Box!(T, 2) b) {
+    return only(b.topLeft, b.topRight, b.bottomRight, b.bottomLeft);
+}
+
 ///
 unittest {
     import std.algorithm : equal;
+
+    auto seg = seg2f(vec2f(0,0), vec2f(10, 10));
+    assert(seg.vertices.equal([vec2f(0,0), vec2f(10, 10)]));
 
     auto box = box2f(0, 0, 10, 20);
     assert(box.vertices.equal([vec2f( 0, 0),    // top left
@@ -111,8 +118,26 @@ unittest {
                                vec2f(0,20)])); // bottom left
 }
 
+/**
+ * True if `T` is a shape with a _finite_ number of vertices (i.e. not a `Sphere`).
+ *
+ * This implies that, for some `T t`, `t.vertices` returns a range of `Vector`
+ * and `T.edges` returns a range of `Segment`.
+ */
+enum hasVertices(T) = is(ElementType!(typeof(T.init.vertices)) : Vector!(V, 2), V);
+
+unittest {
+    assert( hasVertices!(Triangle!(float, 2)));
+    assert( hasVertices!(Box!(int, 2)));
+    assert( hasVertices!(Segment!(real, 2)));
+    assert(!hasVertices!(Sphere!(float, 2)));
+    assert(!hasVertices!(Ray!(int, 2)));
+    assert(!hasVertices!float);
+    assert(!hasVertices!string);
+}
+
 /// Returns a range of the segments composing the sides of a shape.
-auto edges(T)(T a) if (is(typeof(a.vertices))) {
+auto edges(T)(T a) if (hasVertices!T) {
     // we need a function to deduce the proper segment type from the vertex type
     // for example, given two vec2f, returns a seg2f
     auto segment(V)(Vector!(V, 2) v1, Vector!(V, 2) v2) {
@@ -147,13 +172,11 @@ unittest {
     assert(actualNormals.equal(expectedNormals));
 }
 
-/**
- * Returns a range containing the segment itself.
- */
-auto edges(T)(Segment!(T, 2) seg) { return only(seg); }
-
+/// Note that a segment has two edges, the latter of which is the reverse of the segment.
 unittest {
-    auto seg = seg2f(vec2f(10, 10), vec2f(20, 20));
-    assert(seg.edges.front == seg);
-    assert(seg.edges.length == 1);
+    import std.algorithm : equal;
+    auto a = vec2f(12, 14);
+    auto b = vec2f(16, 20);
+    auto seg = seg2f(a, b);
+    assert(seg.edges.equal([seg2f(a,b), seg2f(b,a)]));
 }
