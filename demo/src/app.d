@@ -1,5 +1,6 @@
 import std.stdio;
 import std.range;
+import std.algorithm;
 
 import allegro5.allegro;
 import allegro5.allegro_color;
@@ -87,9 +88,7 @@ int main() {
                 if (selectedShape.hasValue) {
                     // drag out the size of the shape
                     immutable m = vec2f(ev.mouse.x, ev.mouse.y);
-                    selectedShape = selectedShape.tryVisit!(
-                        (box2f b) => shape(box2f(b.min, m)),
-                        (sphere2f s) => shape(sphere2f(s.center, s.center.distanceTo(m))));
+                    selectedShape = selectedShape.tryVisitAny!(x => drag(x, m));
                 }
                 break;
             case ALLEGRO_EVENT_KEY_DOWN:
@@ -99,6 +98,9 @@ int main() {
                         break;
                     case ALLEGRO_KEY_C:
                         startShape = &startCircle;
+                        break;
+                    case ALLEGRO_KEY_S:
+                        startShape = &startSegment;
                         break;
                     default: // ignore other keys
                 }
@@ -114,6 +116,21 @@ int main() {
 
             foreach(shape ; shapes) draw(shape, al_map_rgb(0, 255, 0));
 
+            // draw separating projection vectors for collisions
+            foreach(i ; 0..shapes.length)
+                foreach(j ; 0..shapes.length) {
+                    if (i == j) continue; // don't check shape against itself
+                    immutable a = shapes[i],
+                              b = shapes[j],
+                              proj = a.separate(b),
+                              center = a.tryVisitAny!(x => x.center),
+                              seg = seg2f(center, center + proj);
+
+                    if (proj.squaredLength > 0)
+                        draw(seg, al_map_rgb(255,0,0));
+                }
+
+            // draw shape currently being created
             if (selectedShape.hasValue) draw(selectedShape, al_map_rgb(0,128,0));
 
             al_flip_display();
@@ -137,5 +154,12 @@ void drawGrid() {
         draw(seg2f(vec2f(-10, y), vec2f(screenW + 10, y)), color);
 }
 
+auto startSegment(vec2f pos) { return shape(seg2f(pos, pos)); }
 auto startRect(vec2f pos) { return shape(box2f(pos, pos)); }
 auto startCircle(vec2f pos) { return shape(sphere2f(pos, 0)); }
+
+auto drag(seg2f x, vec2f m) { return shape(seg2f(x.a, m)); }
+auto drag(box2f x, vec2f m) { return shape(box2f(x.min, m)); }
+auto drag(sphere2f x, vec2f m) {
+    return shape(sphere2f(x.center, x.center.distanceTo(m)));
+}
