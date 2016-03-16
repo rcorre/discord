@@ -198,3 +198,6 @@ unittest {
     static assert(is(DimensionType!ray2f == float));
     static assert(is(DimensionType!(Sphere!(long, 2)) == long));
 }
+
+/// Return the midpoint of a segment
+auto center(T)(Segment!(T, 2) s) { return (s.a + s.b) / 2; }
