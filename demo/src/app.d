@@ -15,14 +15,23 @@ enum {
     gridSpace = 20,
 }
 
+enum Mode {
+    none,
+    placeRect,
+    placeCircle,
+    placeSegment,
+    placeTriangle,
+}
+
+
 int main() {
     ALLEGRO_DISPLAY     *display     = null;
     ALLEGRO_EVENT_QUEUE *event_queue = null;
     ALLEGRO_TIMER       *timer       = null;
 
     Shape!float[] shapes;
-    Shape!float selectedShape;
-    Shape!float function(vec2f mousePos) startShape = &startRect;
+    Mode mode;
+    vec2f[] verts;
 
     if(!al_init()) {
         stderr.writeln("failed to initialize allegro!\n");
@@ -64,6 +73,7 @@ int main() {
 
     bool redraw = true;
     bool done = false;
+    vec2f mousePos;
     while(!done) {
         ALLEGRO_EVENT ev;
         al_wait_for_event(event_queue, &ev);
@@ -77,30 +87,28 @@ int main() {
                 break;
             case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
                 // start placing a shape that (so far) has no size
-                selectedShape = startShape(vec2f(ev.mouse.x, ev.mouse.y));
-                break;
-            case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
-                // confirm placement of the current shape
-                shapes ~= selectedShape;
-                selectedShape = Shape!float();
+                if (mode != Mode.none) verts ~= vec2f(ev.mouse.x, ev.mouse.y);
+                if (shapeComplete(verts, mode)) {
+                    shapes ~= createShape(verts, mode);
+                    verts = [];
+                }
                 break;
             case ALLEGRO_EVENT_MOUSE_AXES:
-                if (selectedShape.hasValue) {
-                    // drag out the size of the shape
-                    immutable m = vec2f(ev.mouse.x, ev.mouse.y);
-                    selectedShape = selectedShape.tryVisitAny!(x => drag(x, m));
-                }
+                mousePos = vec2f(ev.mouse.x, ev.mouse.y);
                 break;
             case ALLEGRO_EVENT_KEY_DOWN:
                 switch (ev.keyboard.keycode) {
                     case ALLEGRO_KEY_R:
-                        startShape = &startRect;
+                        mode = Mode.placeRect;
                         break;
                     case ALLEGRO_KEY_C:
-                        startShape = &startCircle;
+                        mode = Mode.placeCircle;
                         break;
                     case ALLEGRO_KEY_S:
-                        startShape = &startSegment;
+                        mode = Mode.placeSegment;
+                        break;
+                    case ALLEGRO_KEY_ESCAPE:
+                        mode = Mode.none;
                         break;
                     default: // ignore other keys
                 }
@@ -130,8 +138,10 @@ int main() {
                         draw(seg, al_map_rgb(255,0,0));
                 }
 
-            // draw shape currently being created
-            if (selectedShape.hasValue) draw(selectedShape, al_map_rgb(0,128,0));
+            // draw shape currently being created, using the current mouse 
+            // position as the next vertex so the shape resizes in real time
+            if (verts.length > 0)
+                drawPartialShape(verts, mousePos, mode);
 
             al_flip_display();
         }
@@ -154,12 +164,49 @@ void drawGrid() {
         draw(seg2f(vec2f(-10, y), vec2f(screenW + 10, y)), color);
 }
 
-auto startSegment(vec2f pos) { return shape(seg2f(pos, pos)); }
-auto startRect(vec2f pos) { return shape(box2f(pos, pos)); }
-auto startCircle(vec2f pos) { return shape(sphere2f(pos, 0)); }
+void drawPartialShape(vec2f[] verts, vec2f mousePos, Mode mode) {
+    immutable color = al_map_rgb(0,0,255);
 
-auto drag(seg2f x, vec2f m) { return shape(seg2f(x.a, m)); }
-auto drag(box2f x, vec2f m) { return shape(box2f(x.min, m)); }
-auto drag(sphere2f x, vec2f m) {
-    return shape(sphere2f(x.center, x.center.distanceTo(m)));
+    final switch (mode) with (Mode) {
+        case none:
+            break;
+        case placeRect:
+            box2f(verts[0], mousePos).draw(color);
+            break;
+        case placeCircle:
+                auto box = box2f(verts[0], mousePos);
+                sphere2f(box.center, box.width / 2).draw(color);
+            break;
+        case placeSegment:
+            seg2f(verts[0], mousePos).draw(color);
+            break;
+        case placeTriangle:
+            break;
+    }
+}
+
+auto createShape(vec2f[] verts, Mode mode) {
+    final switch (mode) with (Mode) {
+        case none:
+            assert(0);
+        case placeRect:
+            return box2f(verts[0], verts[1]).shape;
+        case placeCircle:
+            auto box = box2f(verts[0], verts[1]);
+            return sphere2f(box.center, box.width / 2).shape;
+        case placeSegment:
+            return seg2f(verts[0], verts[1]).shape;
+        case placeTriangle:
+            return triangle2f(verts[0], verts[1], verts[2]).shape;
+    }
+}
+
+bool shapeComplete(vec2f[] verts, Mode mode) {
+    final switch (mode) with (Mode) {
+        case none:          return false;
+        case placeRect:     return verts.length == 2;
+        case placeCircle:   return verts.length == 2;
+        case placeSegment:  return verts.length == 2;
+        case placeTriangle: return verts.length == 3;
+    }
 }
