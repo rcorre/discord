@@ -57,7 +57,11 @@ auto separate(A, B)(in A a, in B b) if (hasVertices!A && hasVertices!B) {
             minOverlap = -overlap;
             minAxis = axis;
         }
-        else if ((overlap = spanB[1] - spanA[0]) > 0 && overlap < abs(minOverlap)) {
+
+        // this is deliberately not an else-if; the previous if could pass but
+        // we have an even smaller overlap in this direction.
+        // this is important if one span contains the other.
+        if ((overlap = spanB[1] - spanA[0]) > 0 && overlap < abs(minOverlap)) {
             /*     A:        a0|------|a1
              *     B: b0|---------|b1
              *                 +--+ (overlap)
