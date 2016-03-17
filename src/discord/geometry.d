@@ -201,3 +201,6 @@ unittest {
 
 /// Return the midpoint of a segment
 auto center(T)(Segment!(T, 2) s) { return (s.a + s.b) / 2; }
+
+/// Return the center of a triangle
+auto center(T)(Triangle!(T, 2) t) { return (t.a + t.b + t.c) / 3; }
