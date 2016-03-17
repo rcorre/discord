@@ -107,6 +107,9 @@ int main() {
                     case ALLEGRO_KEY_S:
                         mode = Mode.placeSegment;
                         break;
+                    case ALLEGRO_KEY_T:
+                        mode = Mode.placeTriangle;
+                        break;
                     case ALLEGRO_KEY_ESCAPE:
                         mode = Mode.none;
                         break;
@@ -181,6 +184,10 @@ void drawPartialShape(vec2f[] verts, vec2f mousePos, Mode mode) {
             seg2f(verts[0], mousePos).draw(color);
             break;
         case placeTriangle:
+            if (verts.length == 1)
+                seg2f(verts[0], mousePos).draw(color);
+            else
+                triangle2f(verts[0], verts[1], mousePos).draw(color);
             break;
     }
 }
