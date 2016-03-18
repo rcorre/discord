@@ -8,19 +8,14 @@ import std.algorithm;
 import discord.shape;
 import discord.geometry;
 
+enum isSphere(T) = is(T : Sphere!(U, 2), U);
+
 auto separate(A, B)(in A a, in B b) if (isShape!A && isShape!B) {
-    return a.tryVisitAny!(_a => b.tryVisitAny!(_b => separate(_a, _b)));
+    return a.visitAny!(_a => b.visitAny!(_b => separate(_a, _b)));
 }
 
-auto separate(A, B)(in A a, in B b) if (is(A : Sphere!T, T) && hasVertices!B) {
-    return vec2f(0, 0);
-}
-
-auto separate(A, B)(in A a, in B b) if (hasVertices!A && is(B : Sphere!T, T)) {
-    return -separate(b, a);
-}
-
-auto separate(A, B)(in A a, in B b) if (hasVertices!A && hasVertices!B) {
+auto separate(A, B)(in A a, in B b) if (isShapeKind!A && isShapeKind!B)
+{
     alias D = CommonType!(DimensionType!A, DimensionType!B);
 
     auto minAxis = Vector!(D, 2)(0, 0);
@@ -105,15 +100,6 @@ unittest {
     test([0,0,4,4], [0,0,2,3], vec2f( 2, 0));
 }
 
-auto separate(T)(in Sphere!(T, 2) a, in Sphere!(T, 2) b) {
-    // TODO: optimize
-    immutable disp = a.center - b.center; // vector from B to A
-
-    return (disp.length < a.radius + b.radius) ?
-        disp.normalized * (a.radius + b.radius - disp.length) :
-        Vector!(T, 2)(0, 0); // no intersection, no separation needed
-}
-
 unittest {
     auto sep(float[2] ac, float ar, float[2] bc, float br) {
         return separate(sphere2f(vec2f(ac), ar), sphere2f(vec2f(bc), br));
@@ -133,7 +119,19 @@ version(unittest)
     }
 
 auto separatingAxes(A, B)(A a, B b) {
-    return chain(a.axes, b.axes);
+    static if (hasVertices!A && hasVertices!B)
+            return chain(a.axes, b.axes);
+    else static if (hasVertices!A && isSphere!B)
+        // for a circle and a polygon, draw a line from the circle's center through
+        // each vertex of the polygon. Each of these is a separating axis.
+        // combine this with the normals of the polygon's edges to get all axes.
+        return a.vertices
+            .map!(x => x - b.center)
+            .chain(a.axes);
+    else static if (hasVertices!B && isSphere!A)
+        return separatingAxes(b, a);
+    else static if (isSphere!A && isSphere!B)
+        return only((a.center - b.center).normalized);
 }
 
 unittest {
@@ -161,8 +159,8 @@ unittest {
             [vec2f(-1, 0), vec2f(1, 0)]));
 }
 
-// Project a shape onto an axis
-auto project(T, V)(T poly, V axis) {
+// Project a polygon onto an axis
+auto project(T, V)(T poly, V axis) if (hasVertices!T) {
     alias D = DimensionType!T;
     D[2] span = [D.max, 0];
     foreach(v ; poly.vertices) {
@@ -179,4 +177,20 @@ unittest {
     assert(box2f(2, 4, 6, 8).project(vec2f(0, 1)) == [4, 8]);
     assert(seg2f(vec2f(2, 3), vec2f(4, 8)).project(vec2f(1, 0)) == [2, 4]);
     assert(seg2f(vec2f(2, 3), vec2f(4, 8)).project(vec2f(0, 1)) == [3, 8]);
+}
+
+// Project a sphere onto an axis
+auto project(T, V)(T sphere, V axis) if (isSphere!T) {
+    alias D = DimensionType!T;
+
+    // the projection is the diameter along the given axis
+    auto m = sphere.center.dot(axis);
+    D[2] span = [m - sphere.radius, m + sphere.radius];
+
+    return span;
+}
+
+unittest {
+    assert(sphere2f(vec2f(3, 4), 2).project(vec2f(1, 0)) == [1, 5]);
+    assert(sphere2f(vec2f(3, 4), 2).project(vec2f(0, 1)) == [2, 6]);
 }
