@@ -126,7 +126,7 @@ auto separatingAxes(A, B)(A a, B b) {
         // each vertex of the polygon. Each of these is a separating axis.
         // combine this with the normals of the polygon's edges to get all axes.
         return a.vertices
-            .map!(x => x - b.center)
+            .map!(x => (x - b.center).normalized)
             .chain(a.axes);
     else static if (hasVertices!B && isSphere!A)
         return separatingAxes(b, a);
