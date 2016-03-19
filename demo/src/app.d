@@ -23,7 +23,6 @@ enum Mode {
     placeTriangle,
 }
 
-
 int main() {
     ALLEGRO_DISPLAY     *display     = null;
     ALLEGRO_EVENT_QUEUE *event_queue = null;
@@ -141,7 +140,7 @@ int main() {
                         draw(seg, al_map_rgb(255,0,0));
                 }
 
-            // draw shape currently being created, using the current mouse 
+            // draw shape currently being created, using the current mouse
             // position as the next vertex so the shape resizes in real time
             if (verts.length > 0)
                 drawPartialShape(verts, mousePos, mode);
