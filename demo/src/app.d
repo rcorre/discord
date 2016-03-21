@@ -12,9 +12,10 @@ import backend;
 enum {
     screenW = 800,
     screenH = 600,
-    gridSpace = 20,
+    gridSpace = 20, // pixels between grid lines
 }
 
+// determine which kind of shape will be created on clicking
 enum Mode {
     none,
     placeRect,
@@ -93,6 +94,7 @@ int main() {
                 }
                 break;
             case ALLEGRO_EVENT_MOUSE_AXES:
+                // if placing a shape, update the current point
                 mousePos = vec2f(ev.mouse.x, ev.mouse.y);
                 break;
             case ALLEGRO_EVENT_KEY_DOWN:
@@ -118,7 +120,7 @@ int main() {
             default: // ignore other events
         }
 
-        if(redraw && al_is_event_queue_empty(event_queue)) {
+        if (redraw && al_is_event_queue_empty(event_queue)) {
             redraw = false;
             al_clear_to_color(al_map_rgb(0,0,0));
 
@@ -133,11 +135,11 @@ int main() {
                     immutable a = shapes[i],
                               b = shapes[j],
                               proj = a.separate(b),
-                              center = a.tryVisitAny!(x => x.center),
-                              seg = seg2f(center, center + proj);
+                              center = a.visitAny!(x => x.center);
 
+                    // draw the arrow from the shape's center
                     if (proj.squaredLength > 0)
-                        draw(seg, al_map_rgb(255,0,0));
+                        drawArrow(center, center + proj, al_map_rgb(255,0,0));
                 }
 
             // draw shape currently being created, using the current mouse
@@ -156,6 +158,7 @@ int main() {
     return 0;
 }
 
+// draw the background grid
 void drawGrid() {
     immutable color = al_map_rgb(100, 100, 100);
 
@@ -166,6 +169,7 @@ void drawGrid() {
         draw(seg2f(vec2f(-10, y), vec2f(screenW + 10, y)), color);
 }
 
+// draw the shape the user is currently creating
 void drawPartialShape(vec2f[] verts, vec2f mousePos, Mode mode) {
     immutable color = al_map_rgb(0,0,255);
 
@@ -191,6 +195,7 @@ void drawPartialShape(vec2f[] verts, vec2f mousePos, Mode mode) {
     }
 }
 
+// generate a shape from a set of points placed by the user
 auto createShape(vec2f[] verts, Mode mode) {
     final switch (mode) with (Mode) {
         case none:
@@ -207,6 +212,7 @@ auto createShape(vec2f[] verts, Mode mode) {
     }
 }
 
+// true if user has placed enough points to create a shape
 bool shapeComplete(vec2f[] verts, Mode mode) {
     final switch (mode) with (Mode) {
         case none:          return false;

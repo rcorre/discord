@@ -46,3 +46,18 @@ void draw(T)(Triangle!(T,2) t, ALLEGRO_COLOR color, float thickness = 1) {
 void draw(T)(T s, ALLEGRO_COLOR color, float thickness = 1) if (isShape!T) {
     s.visitAny!(x => draw(x, al_map_rgb(0, 255, 0), thickness));
 }
+void drawArrow(vec2f start, vec2f end, ALLEGRO_COLOR color) {
+    enum size = 4; // arrowhead size
+
+    // draw the segment
+	al_draw_line(start.x, start.y, end.x, end.y, color, 1);
+
+    // draw the tip of the arrow
+	immutable dir = (end - start).normalized,
+              a = end + dir * size,
+              b = end + dir.normal * size,
+              c = end - dir.normal * size;
+
+	al_draw_filled_triangle(a.x, a.y, b.x, b.y, c.x, c.y, color);
+
+}
