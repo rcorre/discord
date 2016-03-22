@@ -6,13 +6,20 @@ import std.algorithm;
 import gfm.math;
 
 /**
- * Returns the vector normal to the given segment as a unit vector.
+ * Returns a normal to the given vector as a unit vector.
  *
- * In a cartesian space where the +y axis goes 'up', `seg.normal` corresponds to the normal
- * _clockwise_ from the direction of the segment (counterclockwise if the +y axis goes 'down').
- * The other normal is given as `-seg.normal`.
+ * A 2D vector `v` has two normals, given by `v.normal` and `-v.normal`.
  */
-auto normal(seg2f seg) {
+auto normal(in vec2f v) {
+    return vec2f(v.y, -v.x).normalized;
+}
+
+/**
+ * Returns a normal to the given segment as a unit vector.
+ *
+ * A 2D segment `s` has two normals, given by `s.normal` and `-s.normal`.
+ */
+auto normal(in seg2f seg) {
     immutable dir = seg.b - seg.a;
     return vec2f(dir.y, -dir.x).normalized;
 }
