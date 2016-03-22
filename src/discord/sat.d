@@ -31,7 +31,7 @@ auto separate(A, B)(in A a, in B b) if (isShapeKind!A && isShapeKind!B)
         auto spanB = project(b, axis);
         D overlap;
 
-        if (spanA[1] < spanB[0] || spanA[0] > spanB[1]) {
+        if (spanA[1] <= spanB[0] || spanA[0] >= spanB[1]) {
             /* There is no overlap along the current axis:
              *      A: a0|------|a1
              *      B:               b0|---------|b1
@@ -70,6 +70,7 @@ auto separate(A, B)(in A a, in B b) if (isShapeKind!A && isShapeKind!B)
     return minAxis * minOverlap;
 }
 
+// box/box
 unittest {
     auto test(float[4] a, float[4] b, vec2f expected) {
         auto boxA = box2f(a[0], a[1], a[2], a[3]);
@@ -81,8 +82,8 @@ unittest {
 
         // reversing the order should reverse the separation vector
         auto res2 = separate(boxB, boxA);
-        //assert(res2.x.approxEqual(-expected.x));
-        //assert(res2.y.approxEqual(-expected.y));
+        assert(res2.x.approxEqual(-expected.x));
+        assert(res2.y.approxEqual(-expected.y));
     }
 
     // no intersection
@@ -100,6 +101,7 @@ unittest {
     test([0,0,4,4], [0,0,2,3], vec2f( 2, 0));
 }
 
+// sphere/sphere
 unittest {
     auto sep(float[2] ac, float ar, float[2] bc, float br) {
         return separate(sphere2f(vec2f(ac), ar), sphere2f(vec2f(bc), br));
@@ -109,6 +111,24 @@ unittest {
     assert(sep([0, 0], 4, [7, 0], 3) == vec2f( 0, 0));
     assert(sep([0, 0], 4, [8, 0], 3) == vec2f( 0, 0));
     assert(sep([6, 0], 3, [0, 0], 4) == vec2f( 1, 0)); // reverse of first case
+}
+
+// tri/tri
+unittest {
+    assert(separate(triangle2f(vec2f(-2,  0), vec2f(2,  0), vec2f(0,  4)),
+                    triangle2f(vec2f(-2, -1), vec2f(2, -1), vec2f(0, -4)))
+           == vec2f(0, 0));
+
+    assert(separate(triangle2f(vec2f(0, 1), vec2f(0, 0), vec2f(1, 0)),
+                    triangle2f(vec2f(0, 2), vec2f(2, 0), vec2f(2, 2)))
+           == vec2f(0, 0));
+}
+
+// tri/rect
+unittest {
+    assert(separate(triangle2f(vec2f(2, 0), vec2f(6, 0), vec2f(4, 2)),
+                    box2f(0, 1, 3, 4))
+           == vec2f(0, 0));
 }
 
 private:
@@ -162,7 +182,7 @@ unittest {
 // Project a polygon onto an axis
 auto project(T, V)(T poly, V axis) if (hasVertices!T) {
     alias D = DimensionType!T;
-    D[2] span = [D.max, 0];
+    D[2] span = [D.max, -D.max];
     foreach(v ; poly.vertices) {
         auto scalarProj = v.dot(axis);
         span[0] = min(span[0], scalarProj);
