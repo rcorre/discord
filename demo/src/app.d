@@ -129,18 +129,16 @@ int main() {
             foreach(shape ; shapes) draw(shape, al_map_rgb(0, 255, 0));
 
             // draw separating projection vectors for collisions
-            foreach(i ; 0..shapes.length)
-                foreach(j ; 0..shapes.length) {
-                    if (i == j) continue; // don't check shape against itself
-                    immutable a = shapes[i],
-                              b = shapes[j],
-                              proj = a.separate(b),
-                              center = a.visitAny!(x => x.center);
+            foreach(a, b ; shapes.cartesianProduct(shapes)) {
+                if (a == b) continue; // don't check shape against itself
 
-                    // draw the arrow from the shape's center
-                    if (proj.squaredLength > 0)
-                        drawArrow(center, center + proj, al_map_rgb(255,0,0));
-                }
+                immutable proj = a.separate(b),
+                          center = a.visitAny!(x => x.center);
+
+                // draw the arrow from the shape's center
+                if (proj.squaredLength > 0)
+                    drawArrow(center, center + proj, al_map_rgb(255,0,0));
+            }
 
             // draw shape currently being created, using the current mouse
             // position as the next vertex so the shape resizes in real time
