@@ -93,10 +93,7 @@ unittest {
 }
 
 /// `true` iff `T` is a kind of `Shape` (can construct a `Shape` from a `T`).
-enum isShapeKind(T) = is(T : Segment !(U, 2), U) ||
-                      is(T : Triangle!(U, 2), U) ||
-                      is(T : Box     !(U, 2), U) ||
-                      is(T : Sphere  !(U, 2), U);
+enum isShapeKind(T) = isSegment!T || isTriangle!T || isBox!T || isSphere!T;
 
 ///
 unittest {

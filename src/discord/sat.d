@@ -8,8 +8,6 @@ import std.algorithm;
 import discord.shape;
 import discord.geometry;
 
-enum isSphere(T) = is(T : Sphere!(U, 2), U);
-
 auto separate(A, B)(in A a, in B b) if (isShape!A && isShape!B) {
     return a.visitAny!(_a => b.visitAny!(_b => separate(_a, _b)));
 }
@@ -163,7 +161,7 @@ unittest {
 }
 
 auto axes(T)(in T t) {
-    static if (is(T : Box!(U, 2), U))
+    static if (isBox!T)
         // specialization for AABB -- we know it only has two axes (the x/y axes)
         return only(vec2f(1, 0), vec2f(0, 1));
     else

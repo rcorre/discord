@@ -188,23 +188,6 @@ unittest {
     assert(seg.edges.equal([seg2f(a,b), seg2f(b,a)]));
 }
 
-template DimensionType(T) {
-   static if(is(T : Segment !(U, 2), U) ||
-             is(T : Triangle!(U, 2), U) ||
-             is(T : Box     !(U, 2), U) ||
-             is(T : Ray     !(U, 2), U) ||
-             is(T : Vector  !(U, 2), U) ||
-             is(T : Sphere  !(U, 2), U))
-       alias DimensionType = U;
-}
-
-unittest {
-    static assert(is(DimensionType!vec2f == float));
-    static assert(is(DimensionType!seg2d == double));
-    static assert(is(DimensionType!box2i == int));
-    static assert(is(DimensionType!ray2f == float));
-    static assert(is(DimensionType!(Sphere!(long, 2)) == long));
-}
 
 /// Return the midpoint of a segment
 auto center(T)(Segment!(T, 2) s) { return (s.a + s.b) / 2; }
