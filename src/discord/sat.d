@@ -1,3 +1,17 @@
+/**
+ * Use the Separating Axis Theorem (SAT) to detect and resolve collisions.
+ *
+ * If two shapes `a` and `b` are intersecting, `separate(a, b)` will return the
+ * minimum-length vector which would 'push' `a` out of intersection with `b`.
+ * If `a` and `b` do not overlap, `separate(a, b)` returns the zero vector.
+ *
+ * The SAT can detect a collision 'early' and return before performing further
+ * checks, making it suitable for both collision detection and collision
+ * resolution.
+ *
+ * For more info, see http://www.metanetsoftware.com/technique/tutorialA.html,
+ * which was referenced heavily while building this module..
+ */
 module discord.sat;
 
 import std.math;
